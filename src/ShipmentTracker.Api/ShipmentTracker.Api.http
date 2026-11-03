@@ -1,0 +1,42 @@
+# Sample requests. Works in VS Code (REST Client), Rider and Visual Studio.
+@baseUrl = http://localhost:5080
+@id = 01a19f11-497f-7d15-be9e-ea8646018b5c
+
+### Health
+GET {{baseUrl}}/health
+
+### Create a shipment
+POST {{baseUrl}}/api/v1/shipments
+Content-Type: application/json
+
+{
+  "referenceNumber": "SHP-1001",
+  "origin": "Chicago, IL",
+  "destination": "Dallas, TX",
+  "weightKg": 1250.5
+}
+
+### List shipments (paged, optional status filter)
+GET {{baseUrl}}/api/v1/shipments?page=1&pageSize=20&status=Created
+
+### Get one shipment
+GET {{baseUrl}}/api/v1/shipments/{{id}}
+
+### Update details (only while Created)
+PUT {{baseUrl}}/api/v1/shipments/{{id}}
+Content-Type: application/json
+
+{
+  "origin": "Chicago, IL",
+  "destination": "Houston, TX",
+  "weightKg": 1305
+}
+
+### Move to InTransit
+PATCH {{baseUrl}}/api/v1/shipments/{{id}}/status
+Content-Type: application/json
+
+{ "status": "InTransit" }
+
+### Delete
+DELETE {{baseUrl}}/api/v1/shipments/{{id}}

@@ -1,0 +1,21 @@
+# Weekly dependency update PRs. Pairs well with Claude: comment
+# "@claude review this upgrade and fix any breaking changes" on the Dependabot PR.
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      microsoft:
+        patterns: ["Microsoft.*", "Npgsql.*"]
+      testing:
+        patterns: ["xunit*", "Testcontainers*", "Microsoft.NET.Test.Sdk"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly

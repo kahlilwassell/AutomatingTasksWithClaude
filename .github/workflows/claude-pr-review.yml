@@ -1,0 +1,42 @@
+# Automated review on every PR, using THIS repo's review rules
+# (.claude/agents/code-reviewer.md + CLAUDE.md) instead of a generic prompt.
+# Azure DevOps parallel: a PR "build validation" policy running a review script.
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # full history so `git diff origin/main...HEAD` works
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Review pull request #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+            Follow the process and output format in .claude/agents/code-reviewer.md, using
+            `git diff origin/${{ github.base_ref }}...HEAD` as the change set. Skip the build/test
+            step; CI covers it.
+            Post blocking and should-fix findings as inline comments on the relevant lines,
+            then post one summary comment with the verdict.
+          claude_args: |
+            --max-turns 20
+            --allowedTools "Read,Grep,Glob,Bash(git diff *),Bash(git log *),Bash(gh pr view *),Bash(gh pr diff *),Bash(gh pr comment *),mcp__github_inline_comment__create_inline_comment"
