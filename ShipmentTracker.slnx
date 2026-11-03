@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ShipmentTracker.Domain/ShipmentTracker.Domain.csproj" />
+    <Project Path="src/ShipmentTracker.Application/ShipmentTracker.Application.csproj" />
+    <Project Path="src/ShipmentTracker.Infrastructure/ShipmentTracker.Infrastructure.csproj" />
+    <Project Path="src/ShipmentTracker.Api/ShipmentTracker.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ShipmentTracker.UnitTests/ShipmentTracker.UnitTests.csproj" />
+    <Project Path="tests/ShipmentTracker.IntegrationTests/ShipmentTracker.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

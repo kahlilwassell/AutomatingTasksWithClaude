@@ -1,0 +1,96 @@
+# Azure DevOps equivalent of .github/workflows/ci.yml, for side-by-side comparison.
+# Not used by this GitHub repo. To try it: create a pipeline in an AZDO project
+# pointing at this file (AZDO can build GitHub repos via a service connection).
+#
+# GitHub Actions          -> Azure Pipelines
+#   on: pull_request      -> pr: / branch policy "Build validation"
+#   jobs.<id>.runs-on     -> pool.vmImage
+#   steps: uses: action   -> steps: task: Name@Version
+#   secrets.X             -> variable group / pipeline secret variable $(X)
+#   upload-artifact       -> PublishTestResults / PublishPipelineArtifact
+
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  buildConfiguration: Release
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildAndTest
+        timeoutInMinutes: 20
+        steps:
+          - task: UseDotNet@2
+            displayName: Install .NET 10 SDK
+            inputs:
+              packageType: sdk
+              version: 10.0.x
+
+          - script: dotnet restore
+            displayName: Restore
+
+          - script: dotnet format --verify-no-changes --no-restore
+            displayName: Check formatting
+
+          - script: dotnet build --configuration $(buildConfiguration) --no-restore
+            displayName: Build
+
+          - script: >
+              dotnet test tests/ShipmentTracker.UnitTests
+              --configuration $(buildConfiguration) --no-build
+              --logger trx --results-directory $(Agent.TempDirectory)/TestResults
+            displayName: Unit tests
+
+          # Microsoft-hosted ubuntu agents have Docker, so Testcontainers works here too.
+          - script: >
+              dotnet test tests/ShipmentTracker.IntegrationTests
+              --configuration $(buildConfiguration) --no-build
+              --logger trx --results-directory $(Agent.TempDirectory)/TestResults
+            displayName: Integration tests
+
+          - task: PublishTestResults@2
+            displayName: Publish test results
+            condition: always()
+            inputs:
+              testResultsFormat: VSTest
+              testResultsFiles: $(Agent.TempDirectory)/TestResults/*.trx
+
+      - job: DockerImage
+        dependsOn: BuildAndTest
+        steps:
+          - script: docker build -t shipment-tracker-api:$(Build.BuildId) .
+            displayName: Build container image
+
+  # Optional: Claude review on PRs in Azure DevOps. There is no first-party
+  # Claude extension for AZDO, so run Claude Code headless (`claude -p`) in a
+  # script step. Store ANTHROPIC_API_KEY as a secret pipeline variable.
+  - stage: ClaudeReview
+    condition: eq(variables['Build.Reason'], 'PullRequest')
+    dependsOn: []
+    jobs:
+      - job: Review
+        steps:
+          - checkout: self
+            fetchDepth: 0
+          - script: npm install -g @anthropic-ai/claude-code
+            displayName: Install Claude Code
+          - script: |
+              TARGET="origin/${SYSTEM_PULLREQUEST_TARGETBRANCH#refs/heads/}"
+              claude -p "Review the changes in 'git diff $TARGET...HEAD' following .claude/agents/code-reviewer.md. Output markdown." \
+                --allowedTools "Read,Grep,Glob,Bash(git diff *),Bash(git log *)" \
+                --max-turns 15 > review.md
+              cat review.md
+            displayName: Run Claude review
+            env:
+              ANTHROPIC_API_KEY: $(ANTHROPIC_API_KEY)
+          # Next step to try: post review.md as a PR thread via the AZDO REST API
+          # (POST .../pullRequests/{id}/threads) using $(System.AccessToken).

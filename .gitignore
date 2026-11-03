@@ -55,3 +55,11 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Claude Code: personal settings and local agent memory
+.claude/settings.local.json
+.claude/agent-memory-local/
+CLAUDE.local.md
+
+# Test output
+TestResults/

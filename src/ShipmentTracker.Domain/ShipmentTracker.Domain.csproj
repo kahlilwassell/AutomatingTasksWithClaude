@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Domain has NO project or package references. Keep it that way. -->
+  <PropertyGroup>
+    <RootNamespace>ShipmentTracker.Domain</RootNamespace>
+  </PropertyGroup>
+</Project>
